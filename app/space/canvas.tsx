@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
-import { Tldraw, Editor, getSnapshot, TLStoreSnapshot } from "tldraw";
+import { useEffect, useRef, useState } from "react";
+import { Tldraw, Editor, getSnapshot, loadSnapshot, TLStoreSnapshot, useEditor, createTLStore, defaultShapeUtils } from "tldraw";
 import "tldraw/tldraw.css";
 import "./tldraw-overrides.css";
 import { ShadcnToolbar, ShadcnMainMenu } from "./tldraw-ui";
@@ -28,18 +28,17 @@ const COMPONENTS = {
   Minimap: null,
 } as const;
 
-export default function Canvas({ initialSnapshot }: CanvasProps) {
+function SaveManager() {
+  const editor = useEditor();
   const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [editor, setEditor] = useState<Editor | null>(null);
 
-  const handleMount = useCallback((ed: Editor) => {
-    setEditor(ed);
-    ed.store.listen(
+  useEffect(() => {
+    const unsub = editor.store.listen(
       () => {
         if (saveTimeout.current) clearTimeout(saveTimeout.current);
         saveTimeout.current = setTimeout(() => {
           try {
-            const snapshot = getSnapshot(ed.store);
+            const snapshot = getSnapshot(editor.store);
             fetch("/api/drawing", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -50,18 +49,35 @@ export default function Canvas({ initialSnapshot }: CanvasProps) {
       },
       { scope: "document", source: "user" }
     );
-  }, []);
+    return () => {
+      unsub();
+      if (saveTimeout.current) clearTimeout(saveTimeout.current);
+    };
+  }, [editor]);
+
+  return null;
+}
+
+export default function Canvas({ initialSnapshot }: CanvasProps) {
+  const [store] = useState(() => {
+    const s = createTLStore({ shapeUtils: defaultShapeUtils });
+    if (initialSnapshot) {
+      loadSnapshot(s, initialSnapshot);
+    }
+    return s;
+  });
 
   return (
     <div style={{ position: "fixed", inset: 0 }}>
       <Tldraw
-        snapshot={initialSnapshot ?? undefined}
+        store={store}
         inferDarkMode
-        onMount={handleMount}
         components={COMPONENTS}
-      />
-      {editor && <ShadcnMainMenu editor={editor} />}
-      {editor && <ShadcnToolbar editor={editor} />}
+      >
+        <SaveManager />
+        <ShadcnMainMenu />
+        <ShadcnToolbar />
+      </Tldraw>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Editor } from "tldraw";
+import { Editor, useEditor } from "tldraw";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -47,7 +47,8 @@ const Icon = ({ id }: { id: string }) => {
   return <span className="flex items-center justify-center">{map[id] ?? <span className="w-3.5 h-3.5 rounded-full border border-current" />}</span>;
 };
 
-export function ShadcnToolbar({ editor }: { editor: Editor }) {
+export function ShadcnToolbar() {
+  const editor = useEditor();
   const [currentTool, setCurrentTool] = useState("select");
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
@@ -106,7 +107,25 @@ export function ShadcnToolbar({ editor }: { editor: Editor }) {
   );
 }
 
-export function ShadcnMainMenu({ editor }: { editor: Editor }) {
+export function ShadcnMainMenu() {
+  const editor = useEditor();
+  
+  const handleAction = (key: string) => {
+    const ids = editor.getSelectedShapeIds();
+    switch (key) {
+      case "select-all":      editor.selectAll(); break;
+      case "delete":          editor.deleteShapes(ids); break;
+      case "duplicate":       editor.duplicateShapes(ids); break;
+      case "group":           editor.groupShapes(ids); break;
+      case "ungroup":         editor.ungroupShapes(ids); break;
+      case "flip-horizontal": editor.flipShapes(ids, "horizontal"); break;
+      case "flip-vertical":   editor.flipShapes(ids, "vertical"); break;
+      case "zoom-in":         editor.zoomIn(); break;
+      case "zoom-out":        editor.zoomOut(); break;
+      case "zoom-to-fit":     editor.zoomToFit(); break;
+    }
+  };
+
   return (
     <div className="fixed top-4 left-4 z-50">
       <DropdownMenu>
@@ -117,13 +136,13 @@ export function ShadcnMainMenu({ editor }: { editor: Editor }) {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-44">
           {MENU_ACTIONS.slice(0, 5).map(({ key, label }) => (
-            <DropdownMenuItem key={key} className="text-xs" onClick={() => { try { (editor as any)._actionManager?.actions[key]?.onSelect("menu"); } catch {} }}>
+            <DropdownMenuItem key={key} className="text-xs" onClick={() => handleAction(key)}>
               {label}
             </DropdownMenuItem>
           ))}
           <DropdownMenuSeparator />
           {MENU_ACTIONS.slice(5).map(({ key, label }) => (
-            <DropdownMenuItem key={key} className="text-xs" onClick={() => { try { (editor as any)._actionManager?.actions[key]?.onSelect("menu"); } catch {} }}>
+            <DropdownMenuItem key={key} className="text-xs" onClick={() => handleAction(key)}>
               {label}
             </DropdownMenuItem>
           ))}

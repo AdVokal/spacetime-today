@@ -1,6 +1,7 @@
 "use client";
 
-import { Tldraw } from "tldraw";
+import { useEffect, useRef, useState } from "react";
+import { Tldraw, createTLStore, defaultShapeUtils, TLStoreSnapshot } from "tldraw";
 import "tldraw/tldraw.css";
 import "./tldraw-overrides.css";
 import { ShadcnToolbar, ShadcnMainMenu } from "./tldraw-ui";
@@ -14,10 +15,54 @@ interface CanvasProps {
 }
 
 export default function Canvas({ user }: CanvasProps) {
+  const [store] = useState(() => createTLStore({ shapeUtils: defaultShapeUtils }));
+  const [ready, setReady] = useState(false);
+  const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    fetch("/api/drawing")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.snapshot) {
+          try {
+            store.loadSnapshot(data.snapshot as TLStoreSnapshot);
+          } catch {
+          }
+        }
+      })
+      .catch(() => {})
+      .finally(() => setReady(true));
+  }, [store]);
+
+  useEffect(() => {
+    if (!ready) return;
+    const unsub = store.listen(
+      () => {
+        if (saveTimeout.current) clearTimeout(saveTimeout.current);
+        saveTimeout.current = setTimeout(() => {
+          fetch("/api/drawing", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ snapshot: store.getSnapshot() }),
+          });
+        }, 1500);
+      },
+      { scope: "document", source: "user" }
+    );
+    return () => {
+      unsub();
+      if (saveTimeout.current) clearTimeout(saveTimeout.current);
+    };
+  }, [store, ready]);
+
+  if (!ready) {
+    return <div className="fixed inset-0 bg-background" />;
+  }
+
   return (
     <div style={{ position: "fixed", inset: 0 }}>
       <Tldraw
-        persistenceKey={`something-${user?.email ?? "guest"}`}
+        store={store}
         inferDarkMode
         components={{
           Toolbar: null,

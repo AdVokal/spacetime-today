@@ -5,7 +5,6 @@ import { Tldraw, Editor, getSnapshot, TLStoreSnapshot } from "tldraw";
 import "tldraw/tldraw.css";
 import "./tldraw-overrides.css";
 import { ShadcnToolbar, ShadcnMainMenu } from "./tldraw-ui";
-import { saveDrawing } from "@/lib/actions";
 
 interface CanvasProps {
   user: { name?: string | null; email?: string | null; image?: string | null } | undefined;
@@ -41,7 +40,11 @@ export default function Canvas({ initialSnapshot }: CanvasProps) {
         saveTimeout.current = setTimeout(() => {
           try {
             const snapshot = getSnapshot(ed.store);
-            saveDrawing(snapshot).catch(() => {});
+            fetch("/api/drawing", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ snapshot }),
+            }).catch(() => {});
           } catch {}
         }, 2000);
       },

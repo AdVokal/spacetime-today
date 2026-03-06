@@ -6,5 +6,8 @@ const { auth } = NextAuth(authConfig);
 export default auth;
 
 export const config = {
-  matcher: ["/((?!api/auth|_next/static|_next/image|favicon.ico|login).*)"],
+  // Exclude all API routes from auth middleware. API routes handle auth themselves.
+  matcher: [
+    "/((?!api|_next/static|_next/image|favicon.ico|login).*)",
+  ],
 };

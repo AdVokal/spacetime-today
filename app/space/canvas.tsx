@@ -1,13 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { Tldraw, Editor, getSnapshot, TLStoreSnapshot } from "tldraw";
 import "tldraw/tldraw.css";
 import "./tldraw-overrides.css";
 import { ShadcnToolbar, ShadcnMainMenu } from "./tldraw-ui";
+import { saveDrawing } from "@/lib/actions";
 
 interface CanvasProps {
   user: { name?: string | null; email?: string | null; image?: string | null } | undefined;
+  initialSnapshot: TLStoreSnapshot | null;
 }
 
 const COMPONENTS = {
@@ -27,19 +29,9 @@ const COMPONENTS = {
   Minimap: null,
 } as const;
 
-export default function Canvas({ user }: CanvasProps) {
+export default function Canvas({ initialSnapshot }: CanvasProps) {
   const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [initialSnapshot, setInitialSnapshot] = useState<TLStoreSnapshot | undefined>(undefined);
-  const [ready, setReady] = useState(false);
   const [editor, setEditor] = useState<Editor | null>(null);
-
-  useEffect(() => {
-    fetch("/api/drawing")
-      .then((r) => r.json())
-      .then((data) => { if (data.snapshot) setInitialSnapshot(data.snapshot); })
-      .catch(() => {})
-      .finally(() => setReady(true));
-  }, []);
 
   const handleMount = useCallback((ed: Editor) => {
     setEditor(ed);
@@ -49,24 +41,18 @@ export default function Canvas({ user }: CanvasProps) {
         saveTimeout.current = setTimeout(() => {
           try {
             const snapshot = getSnapshot(ed.store);
-            fetch("/api/drawing", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ snapshot }),
-            }).catch(() => {});
+            saveDrawing(snapshot).catch(() => {});
           } catch {}
-        }, 1500);
+        }, 2000);
       },
       { scope: "document", source: "user" }
     );
   }, []);
 
-  if (!ready) return <div className="fixed inset-0 bg-background" />;
-
   return (
     <div style={{ position: "fixed", inset: 0 }}>
       <Tldraw
-        snapshot={initialSnapshot}
+        snapshot={initialSnapshot ?? undefined}
         inferDarkMode
         onMount={handleMount}
         components={COMPONENTS}

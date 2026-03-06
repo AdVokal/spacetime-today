@@ -8,7 +8,7 @@ export default async function SpacePage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="text-center">
-        <h1 className="text-5xl font-bold tracking-tight">something</h1>
+        <h1 className="text-5xl font-bold tracking-tight text-foreground">something</h1>
       </div>
     </div>
   );

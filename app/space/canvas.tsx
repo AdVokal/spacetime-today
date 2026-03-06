@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { Tldraw, Editor, getSnapshot, TLStoreSnapshot } from "tldraw";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Tldraw, Editor, getSnapshot, TLStoreSnapshot, TLComponents } from "tldraw";
 import "tldraw/tldraw.css";
 import "./tldraw-overrides.css";
 import { ShadcnToolbar, ShadcnMainMenu } from "./tldraw-ui";
@@ -13,6 +13,23 @@ interface CanvasProps {
     image?: string | null;
   } | undefined;
 }
+
+const COMPONENTS: TLComponents = {
+  Toolbar: null,
+  MainMenu: null,
+  NavigationPanel: null,
+  HelpMenu: null,
+  StylePanel: null,
+  PageMenu: null,
+  ActionsMenu: null,
+  DebugMenu: null,
+  SharePanel: null,
+  TopPanel: null,
+  ZoomMenu: null,
+  MenuPanel: null,
+  HelperButtons: null,
+  Minimap: null,
+};
 
 export default function Canvas({ user }: CanvasProps) {
   const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -29,7 +46,7 @@ export default function Canvas({ user }: CanvasProps) {
       .finally(() => setReady(true));
   }, []);
 
-  function handleMount(editor: Editor) {
+  const handleMount = useCallback((editor: Editor) => {
     editor.store.listen(
       () => {
         if (saveTimeout.current) clearTimeout(saveTimeout.current);
@@ -43,7 +60,7 @@ export default function Canvas({ user }: CanvasProps) {
       },
       { scope: "document", source: "user" }
     );
-  }
+  }, []);
 
   if (!ready) {
     return <div className="fixed inset-0 bg-background" />;
@@ -55,22 +72,7 @@ export default function Canvas({ user }: CanvasProps) {
         snapshot={initialSnapshot}
         inferDarkMode
         onMount={handleMount}
-        components={{
-          Toolbar: null,
-          MainMenu: null,
-          NavigationPanel: null,
-          HelpMenu: null,
-          StylePanel: null,
-          PageMenu: null,
-          ActionsMenu: null,
-          DebugMenu: null,
-          SharePanel: null,
-          TopPanel: null,
-          ZoomMenu: null,
-          MenuPanel: null,
-          HelperButtons: null,
-          Minimap: null,
-        }}
+        components={COMPONENTS}
       >
         <ShadcnMainMenu />
         <ShadcnToolbar />

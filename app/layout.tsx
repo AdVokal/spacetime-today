@@ -4,9 +4,9 @@ import "./globals.css";
 
 const suisse = localFont({
   src: [
-    { path: "../public/fonts/SuisseIntl-Regular.otf", weight: "400", style: "normal" },
-    { path: "../public/fonts/SuisseIntl-Medium.otf", weight: "500", style: "normal" },
-    { path: "../public/fonts/SuisseIntl-Bold.otf", weight: "700", style: "normal" },
+    { path: "./fonts/SuisseIntl-Regular.otf", weight: "400", style: "normal" },
+    { path: "./fonts/SuisseIntl-Medium.otf", weight: "500", style: "normal" },
+    { path: "./fonts/SuisseIntl-Bold.otf", weight: "700", style: "normal" },
   ],
   variable: "--font-suisse",
   display: "block",

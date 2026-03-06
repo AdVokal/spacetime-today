@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Tldraw, createTLStore, defaultShapeUtils, TLStoreSnapshot } from "tldraw";
+import { Tldraw, createTLStore, defaultShapeUtils, loadSnapshot, getSnapshot } from "tldraw";
 import "tldraw/tldraw.css";
 import "./tldraw-overrides.css";
 import { ShadcnToolbar, ShadcnMainMenu } from "./tldraw-ui";
@@ -25,7 +25,7 @@ export default function Canvas({ user }: CanvasProps) {
       .then((data) => {
         if (data.snapshot) {
           try {
-            store.loadSnapshot(data.snapshot as TLStoreSnapshot);
+            loadSnapshot(store, data.snapshot);
           } catch {
           }
         }
@@ -43,7 +43,7 @@ export default function Canvas({ user }: CanvasProps) {
           fetch("/api/drawing", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ snapshot: store.getSnapshot() }),
+            body: JSON.stringify({ snapshot: getSnapshot(store) }),
           });
         }, 1500);
       },

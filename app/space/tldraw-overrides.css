@@ -1,0 +1,12 @@
+.tl-container,
+.tl-container *:not(.tl-text, .tl-text *) {
+  font-family: var(--font-suisse), "Helvetica Neue", Helvetica, Arial, sans-serif !important;
+}
+
+.tl-canvas {
+  background: hsl(var(--background)) !important;
+}
+
+.tl-grid {
+  --tl-grid-color: hsl(var(--border)) !important;
+}

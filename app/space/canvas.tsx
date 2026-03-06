@@ -1,20 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Tldraw, Editor, getSnapshot, TLStoreSnapshot, TLComponents } from "tldraw";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Tldraw, Editor, getSnapshot, TLStoreSnapshot } from "tldraw";
 import "tldraw/tldraw.css";
 import "./tldraw-overrides.css";
 import { ShadcnToolbar, ShadcnMainMenu } from "./tldraw-ui";
 
 interface CanvasProps {
-  user: {
-    name?: string | null;
-    email?: string | null;
-    image?: string | null;
-  } | undefined;
+  user: { name?: string | null; email?: string | null; image?: string | null } | undefined;
 }
 
-const COMPONENTS: TLComponents = {
+const COMPONENTS = {
   Toolbar: null,
   MainMenu: null,
   NavigationPanel: null,
@@ -29,42 +25,43 @@ const COMPONENTS: TLComponents = {
   MenuPanel: null,
   HelperButtons: null,
   Minimap: null,
-};
+} as const;
 
 export default function Canvas({ user }: CanvasProps) {
   const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [initialSnapshot, setInitialSnapshot] = useState<TLStoreSnapshot | undefined>(undefined);
   const [ready, setReady] = useState(false);
+  const [editor, setEditor] = useState<Editor | null>(null);
 
   useEffect(() => {
     fetch("/api/drawing")
       .then((r) => r.json())
-      .then((data) => {
-        if (data.snapshot) setInitialSnapshot(data.snapshot);
-      })
+      .then((data) => { if (data.snapshot) setInitialSnapshot(data.snapshot); })
       .catch(() => {})
       .finally(() => setReady(true));
   }, []);
 
-  const handleMount = useCallback((editor: Editor) => {
-    editor.store.listen(
+  const handleMount = useCallback((ed: Editor) => {
+    setEditor(ed);
+    ed.store.listen(
       () => {
         if (saveTimeout.current) clearTimeout(saveTimeout.current);
         saveTimeout.current = setTimeout(() => {
-          fetch("/api/drawing", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ snapshot: getSnapshot(editor.store) }),
-          }).catch(() => {});
+          try {
+            const snapshot = getSnapshot(ed.store);
+            fetch("/api/drawing", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ snapshot }),
+            }).catch(() => {});
+          } catch {}
         }, 1500);
       },
       { scope: "document", source: "user" }
     );
   }, []);
 
-  if (!ready) {
-    return <div className="fixed inset-0 bg-background" />;
-  }
+  if (!ready) return <div className="fixed inset-0 bg-background" />;
 
   return (
     <div style={{ position: "fixed", inset: 0 }}>
@@ -73,10 +70,9 @@ export default function Canvas({ user }: CanvasProps) {
         inferDarkMode
         onMount={handleMount}
         components={COMPONENTS}
-      >
-        <ShadcnMainMenu />
-        <ShadcnToolbar />
-      </Tldraw>
+      />
+      {editor && <ShadcnMainMenu editor={editor} />}
+      {editor && <ShadcnToolbar editor={editor} />}
     </div>
   );
 }

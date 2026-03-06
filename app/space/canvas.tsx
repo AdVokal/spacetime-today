@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef } from "react";
-import { Tldraw, Editor, loadSnapshot, getSnapshot } from "tldraw";
+import { useEffect, useRef, useState } from "react";
+import { Tldraw, Editor, getSnapshot, TLStoreSnapshot } from "tldraw";
 import "tldraw/tldraw.css";
 import "./tldraw-overrides.css";
 import { ShadcnToolbar, ShadcnMainMenu } from "./tldraw-ui";
@@ -16,17 +16,20 @@ interface CanvasProps {
 
 export default function Canvas({ user }: CanvasProps) {
   const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [initialSnapshot, setInitialSnapshot] = useState<TLStoreSnapshot | undefined>(undefined);
+  const [ready, setReady] = useState(false);
 
-  function handleMount(editor: Editor) {
+  useEffect(() => {
     fetch("/api/drawing")
       .then((r) => r.json())
       .then((data) => {
-        if (data.snapshot) {
-          loadSnapshot(editor.store, data.snapshot);
-        }
+        if (data.snapshot) setInitialSnapshot(data.snapshot);
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setReady(true));
+  }, []);
 
+  function handleMount(editor: Editor) {
     editor.store.listen(
       () => {
         if (saveTimeout.current) clearTimeout(saveTimeout.current);
@@ -42,9 +45,14 @@ export default function Canvas({ user }: CanvasProps) {
     );
   }
 
+  if (!ready) {
+    return <div className="fixed inset-0 bg-background" />;
+  }
+
   return (
     <div style={{ position: "fixed", inset: 0 }}>
       <Tldraw
+        snapshot={initialSnapshot}
         inferDarkMode
         onMount={handleMount}
         components={{

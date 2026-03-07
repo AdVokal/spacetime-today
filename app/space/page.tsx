@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { loadDrawing } from "@/lib/actions";
-import Canvas from "./canvas";
+import Canvas from "./canvas-client";
 
 export default async function SpacePage() {
   const session = await auth();

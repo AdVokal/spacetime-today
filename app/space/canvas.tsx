@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { Tldraw, Editor, getSnapshot, loadSnapshot, TLStoreSnapshot, useEditor, createTLStore, defaultShapeUtils } from "tldraw";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Tldraw, getSnapshot, loadSnapshot, TLStoreSnapshot, useEditor, createTLStore, defaultShapeUtils } from "tldraw";
 import "tldraw/tldraw.css";
 import "./tldraw-overrides.css";
 import { ShadcnToolbar, ShadcnMainMenu } from "./tldraw-ui";
@@ -32,29 +32,36 @@ function SaveManager() {
   const editor = useEditor();
   const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const doSave = useCallback(() => {
+    try {
+      const snapshot = getSnapshot(editor.store);
+      fetch("/api/drawing", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        keepalive: true,
+        body: JSON.stringify({ snapshot }),
+      }).catch(() => {});
+    } catch {}
+  }, [editor]);
+
   useEffect(() => {
     const unsub = editor.store.listen(
       () => {
         if (saveTimeout.current) clearTimeout(saveTimeout.current);
-        saveTimeout.current = setTimeout(() => {
-          try {
-            const snapshot = getSnapshot(editor.store);
-            fetch("/api/drawing", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              credentials: "same-origin",
-              body: JSON.stringify({ snapshot }),
-            }).catch(() => {});
-          } catch {}
-        }, 2000);
+        saveTimeout.current = setTimeout(doSave, 1000);
       },
       { scope: "document", source: "user" }
     );
+
+    window.addEventListener("beforeunload", doSave);
+
     return () => {
       unsub();
+      window.removeEventListener("beforeunload", doSave);
       if (saveTimeout.current) clearTimeout(saveTimeout.current);
     };
-  }, [editor]);
+  }, [editor, doSave]);
 
   return null;
 }

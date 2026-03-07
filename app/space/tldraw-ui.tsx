@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Editor, useEditor } from "tldraw";
+import { useEditor, useValue } from "tldraw";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -49,18 +48,9 @@ const Icon = ({ id }: { id: string }) => {
 
 export function ShadcnToolbar() {
   const editor = useEditor();
-  const [currentTool, setCurrentTool] = useState("select");
-  const [canUndo, setCanUndo] = useState(false);
-  const [canRedo, setCanRedo] = useState(false);
-
-  useEffect(() => {
-    const unsub = editor.store.listen(() => {
-      setCurrentTool(editor.getCurrentToolId());
-      setCanUndo(editor.getCanUndo());
-      setCanRedo(editor.getCanRedo());
-    });
-    return unsub;
-  }, [editor]);
+  const currentTool = useValue("currentTool", () => editor.getCurrentToolId(), [editor]);
+  const canUndo = useValue("canUndo", () => editor.getCanUndo(), [editor]);
+  const canRedo = useValue("canRedo", () => editor.getCanRedo(), [editor]);
 
   return (
     <TooltipProvider delayDuration={400}>
